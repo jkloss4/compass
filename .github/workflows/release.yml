@@ -1,0 +1,39 @@
+name: Release
+
+# Push a tag like v1.0.0 to build the addon zip and publish it as a GitHub release.
+# Addon managers that support GitHub releases (e.g. WowUp) install/update from this.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stamp version from tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/^## Version:.*/## Version: ${VERSION}/" Wayfinder/Wayfinder.toc
+
+      - name: Package
+        run: |
+          ZIP="Wayfinder-Custom-${GITHUB_REF_NAME}.zip"
+          # first value of "## Interface:" (the TOC may list several, e.g. "120100, 120105")
+          INTERFACE="$(grep -m1 '^## Interface:' Wayfinder/Wayfinder.toc | sed 's/## Interface: *//' | cut -d, -f1 | tr -d ' \r')"
+          zip -r "$ZIP" Wayfinder
+          cat > release.json <<JSON
+          {"releases":[{"filename":"$ZIP","nolib":false,"metadata":[{"flavor":"mainline","interface":$INTERFACE}]}]}
+          JSON
+          sed -i 's/^ *//' release.json
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "Wayfinder-Custom-${GITHUB_REF_NAME}.zip" release.json \
+            --title "$GITHUB_REF_NAME" --generate-notes

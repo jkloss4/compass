@@ -1,0 +1,22 @@
+## Interface: 120100
+## Version: v1.0.0
+## Title: Wayfinder (Custom)
+## Author: Wyomarus
+## Notes: A simple addon to help you find your way around the world of Azeroth.
+## IconTexture: Interface\AddOns\Wayfinder\Media\Icon.jpg
+## AddonCompartmentFunc: Wayfinder_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: Wayfinder_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: Wayfinder_OnAddonCompartmentLeave
+## SavedVariables: WayfinderDebug, WayfinderSettings
+## LoadSavedVariablesFirst: 1
+
+Libs\embeds.xml
+
+Wayfinder.lua
+CompassBanner.lua
+CardinalPoints.lua
+SuperTracking.lua
+Settings.lua
+AddonCompartment.lua
+Events.lua
+Slash.lua
