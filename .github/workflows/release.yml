@@ -23,13 +23,19 @@ jobs:
       - name: Package
         run: |
           ZIP="Wayfinder-Custom-${GITHUB_REF_NAME}.zip"
-          # first value of "## Interface:" (the TOC may list several, e.g. "120100, 120105")
-          INTERFACE="$(grep -m1 '^## Interface:' Wayfinder/Wayfinder.toc | sed 's/## Interface: *//' | cut -d, -f1 | tr -d ' \r')"
+          # one release.json metadata entry per flavor, from the first "## Interface:" value of each:
+          # 1xxxxx = mainline (retail), 16xxx = forever (WoW: Forever)
+          METADATA="" SEEN=""
+          for I in $(grep -m1 '^## Interface:' Wayfinder/Wayfinder.toc | sed 's/## Interface: *//' | tr -d ' \r' | tr ',' ' '); do
+            if [ "$I" -ge 100000 ]; then FLAVOR=mainline
+            elif [ "$I" -ge 16000 ] && [ "$I" -lt 20000 ]; then FLAVOR=forever
+            else continue; fi
+            case " $SEEN " in *" $FLAVOR "*) continue ;; esac
+            SEEN="$SEEN $FLAVOR"
+            METADATA="${METADATA:+$METADATA,}{\"flavor\":\"$FLAVOR\",\"interface\":$I}"
+          done
           zip -r "$ZIP" Wayfinder
-          cat > release.json <<JSON
-          {"releases":[{"filename":"$ZIP","nolib":false,"metadata":[{"flavor":"mainline","interface":$INTERFACE}]}]}
-          JSON
-          sed -i 's/^ *//' release.json
+          echo "{\"releases\":[{\"filename\":\"$ZIP\",\"nolib\":false,\"metadata\":[$METADATA]}]}" > release.json
 
       - name: Publish release
         env:

@@ -1,6 +1,6 @@
 # Wayfinder (Custom)
 
-A personal, retail-only fork of [Wayfinder](https://github.com/wyomarus/wayfinder) by **Wyomarus**: a compass
+A personal fork, for retail and WoW: Forever, of [Wayfinder](https://github.com/wyomarus/wayfinder) by **Wyomarus**: a compass
 banner at the top of the screen, with a marker, distance and ETA for whatever you're super-tracking.
 
 The addon folder keeps the original name, `Wayfinder`, so this **replaces** the upstream addon (don't install both)
@@ -26,14 +26,14 @@ and your existing `WayfinderSettings` carry over. It's tuned to work alongside *
   center line (Blizzard's color picker), with a reset.
 - The marker and readout draw above the compass letters.
 - The CurseForge/Wago/WoWInterface project ids have been removed from the TOC on purpose, so managers won't replace
-  this with upstream. Classic (Interface 16001) support was dropped.
+  this with upstream.
 
 Slash commands: `/wayfinder` or `/wf` (see `/wf` for the list; `/wf settings` opens the options).
 
 ## Install
 
 Download `Wayfinder-Custom-<version>.zip` from the [latest release](../../releases/latest) and extract the
-`Wayfinder` folder into `World of Warcraft\_retail_\Interface\AddOns\`.
+`Wayfinder` folder into `World of Warcraft\_retail_\Interface\AddOns\` (for WoW: Forever, `_classic_beta_` instead of `_retail_`).
 
 An addon manager that installs from GitHub releases (e.g. WowUp: *Install from URL* with this repo's URL) can also
 install and update it, **but only if the repository is public**.
@@ -49,7 +49,7 @@ To update from the command line (works for a private repo, needs `gh auth login`
 - Test local changes: `.\scripts\install-local.ps1` copies the addon folder into `AddOns`, then `/reload`.
 - After a WoW patch: bump `## Interface:` in `Wayfinder/Wayfinder.toc`.
 - Release: `git tag v1.1.0 && git push --tags`. The [Release workflow](.github/workflows/release.yml) stamps the
-  version into the TOC, builds the zip (with a `release.json` so addon managers see it's a retail build), and
+  version into the TOC, builds the zip (with a `release.json` so addon managers see it's a retail and Forever build), and
   publishes the GitHub release.
 
 The addon folder also contains upstream's own README, HISTORY, DEVNOTES and RELEASE notes, kept as they were.

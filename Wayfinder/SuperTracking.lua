@@ -10,7 +10,8 @@ local bind = _p.bind
 local deg = math.deg
 local print = print
 local GetUnitSpeed = GetUnitSpeed
-local issecretvalue = issecretvalue
+-- Secret values are a retail 12.x feature; treat everything as readable on a client without them.
+local issecretvalue = issecretvalue or function() return false end
 
 local Enum = Enum
 
