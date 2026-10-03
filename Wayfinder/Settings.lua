@@ -149,7 +149,7 @@ local function beginTab(text)
     local index = #tabs + 1
     local tab = createTab(text)
     if index == 1 then
-        tab:SetPoint("BOTTOMLEFT", pane, "TOPLEFT", 6, -4)
+        tab:SetPoint("BOTTOMLEFT", pane, "TOPLEFT", 6, -1) -- tabs overlap the pane border by 1px, like Ace3
     else
         tab:SetPoint("LEFT", tabs[index - 1], "RIGHT", -10, 0)
     end
