@@ -202,7 +202,8 @@ function List:Slider(label, minValue, maxValue, step, get, set, format, tooltip,
     end }
     -- the template's value-changed callback also fires when the value is set from code; `syncing` marks those
     local syncing = false
-    slider:Init(get() or minValue, minValue, maxValue, math.floor((maxValue - minValue) / step + 0.5), formatters)
+    -- the value is filled in on refresh: saved settings may not be loaded while the page is built
+    slider:Init(minValue, minValue, maxValue, math.floor((maxValue - minValue) / step + 0.5), formatters)
     slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
         if not syncing then
             set(math.floor(value / step + 0.5) * step)
