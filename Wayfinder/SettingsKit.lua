@@ -540,7 +540,7 @@ function Page:Tabs(names, opts)
 
     local section = CreateFrame("Frame", nil, self.frame)
     section:SetPoint("TOPLEFT", 22, LIST_TOP - 18)
-    section:SetPoint("BOTTOMRIGHT", -16, 22)
+    section:SetPoint("BOTTOMRIGHT", -30, 22) -- leaves room right of the pane for the scroll bar
 
     if opts.title then
         local title = section:CreateFontString(nil, "BACKGROUND", "GameFontHighlightLarge")
@@ -571,8 +571,13 @@ function Page:Tabs(names, opts)
 
     local function MakeList()
         local list = NewList(self, section)
-        list.scroll:SetPoint("TOPLEFT", -8, -26)
-        list.scroll:SetPoint("BOTTOMRIGHT", -12 - SCROLLBAR_W, -8)
+        -- inset from the pane's border art, so row highlights stay inside it
+        list.scroll:SetPoint("TOPLEFT", 8, -26)
+        list.scroll:SetPoint("BOTTOMRIGHT", -20, -8)
+        -- the scroll bar sits outside the pane at the page's right edge, like the Graphics page's
+        list.scroll.ScrollBar:ClearAllPoints()
+        list.scroll.ScrollBar:SetPoint("TOPLEFT", self.frame, "TOPRIGHT", -SCROLLBAR_W, LIST_TOP - 4)
+        list.scroll.ScrollBar:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMRIGHT", -SCROLLBAR_W - 1, 9)
         self.lists[#self.lists + 1] = list
         return list
     end
