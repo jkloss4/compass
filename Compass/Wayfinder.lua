@@ -24,8 +24,6 @@ addon.Constants = addon.Constants or {
 
 local _p = addon.private
 
-assert(LibStub, addonName .. " requires LibStub")
-
 -- WoW: Forever beta had a bug where SavedVariables were written to disk correctly but not
 -- reliably read back on /reload or client restart (confirmed independently of this addon:
 -- https://github.com/ClassicWoWCommunity/forever-bugs/issues/34), which could silently

@@ -57,5 +57,5 @@ The addon folder also contains upstream's own README, HISTORY, DEVNOTES and RELE
 ## Credits and license
 
 Wayfinder was created by **Wyomarus**. Licensed under the **MIT License**, the same as upstream
-([`LICENSE.md`](LICENSE.md), also included in the addon folder). The bundled libraries (HereBeDragons, LibStub,
-CallbackHandler) keep their own licenses.
+([`LICENSE.md`](LICENSE.md), also included in the addon folder). Upstream's bundled libraries (HereBeDragons, LibStub,
+CallbackHandler) are no longer included: the world coordinates come straight from Blizzard's map API.

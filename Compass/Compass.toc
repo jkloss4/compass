@@ -7,8 +7,6 @@
 ## SavedVariables: WayfinderDebug, WayfinderSettings
 ## LoadSavedVariablesFirst: 1
 
-Libs\embeds.xml
-
 Wayfinder.lua
 CompassBanner.lua
 CardinalPoints.lua

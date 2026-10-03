@@ -4,8 +4,6 @@ local _, addon = ...
 local _p = addon.private
 local api = addon.API
 
-local bind = _p.bind
-
 -- Cache global references
 local deg = math.deg
 local print = print
@@ -47,13 +45,42 @@ local GetTaxiNodesForMap = TaxiMap.GetTaxiNodesForMap
 local DeathInfo = C_DeathInfo
 local GetCorpseMapPosition = DeathInfo.GetCorpseMapPosition
 
-local hbd = LibStub("HereBeDragons-2.0")
-assert(hbd, "HereBeDragons-2.0 is required by the Wayfinder SuperTracking module")
-addon.Dependencies["HereBeDragons-2.0"] = hbd
+-- World coordinates straight from Blizzard's map API. (These replace HereBeDragons, which built a table for every map
+-- in the game at load just to answer these three questions. Its per-zone coordinate transforms shift the player and
+-- map positions alike, so they cancel out in the direction and distance between them, which is all this addon uses.)
+-- Same axes as HereBeDragons: x is UnitPosition's second value and the map position's second component.
+local UnitPosition = UnitPosition
+local GetWorldPosFromMapPos = Map.GetWorldPosFromMapPos
+local atan2, sqrt, PI2 = math.atan2, math.sqrt, math.pi * 2
 
-local GetPlayerWorldPosition = bind(hbd, hbd.GetPlayerWorldPosition)
-local GetWorldVector = bind(hbd, hbd.GetWorldVector)
-local GetWorldCoordinatesFromZone = bind(hbd, hbd.GetWorldCoordinatesFromZone)
+--- @return number|nil x, number|nil y, number|nil instanceID
+local function GetPlayerWorldPosition()
+    local y, x, _, instanceID = UnitPosition("player")
+    if not x or not y or issecretvalue(x) or issecretvalue(y) then return nil, nil, instanceID end
+    return x, y, instanceID
+end
+
+--- @return number|nil x, number|nil y, number|nil instanceID
+local function GetWorldCoordinatesFromZone(x, y, mapID)
+    if not (x and y and mapID) then return nil, nil, nil end
+    local instanceID, position = GetWorldPosFromMapPos(mapID, CreateVector2D(x, y))
+    if not position then return nil, nil, nil end
+    local top, left = position:GetXY()
+    return left, top, instanceID
+end
+
+--- Angle (radians, measured as HereBeDragons did) and distance from the origin to the destination.
+local function GetWorldVector(_, oX, oY, dX, dY)
+    if not (oX and oY and dX and dY) then return nil, nil end
+    local deltaX, deltaY = dX - oX, dY - oY
+    local angle = atan2(-deltaX, deltaY)
+    if angle > 0 then
+        angle = PI2 - angle
+    else
+        angle = -angle
+    end
+    return angle, sqrt(deltaX * deltaX + deltaY * deltaY)
+end
 
 -- forward declarations
 local trackingFunctions
@@ -163,6 +190,28 @@ local function superTrackingDestination()
 end
 
 --- Callback for the SuperTracking element on the compass banner.
+-- The destination is looked up DESTINATION_INTERVAL seconds apart rather than every frame: most lookups return new
+-- tables (a waypoint, a POI's info, the quests or taxi nodes on the map), and the target hardly ever moves. A new
+-- target, waypoint or zone looks it up again straight away. The marker's direction still updates every frame.
+local DESTINATION_INTERVAL = 0.2
+local cachedDestX, cachedDestY, lastDestinationTime
+
+local function currentDestination()
+    local now = GetTime()
+    if not lastDestinationTime or now - lastDestinationTime >= DESTINATION_INTERVAL then
+        cachedDestX, cachedDestY = superTrackingDestination()
+        lastDestinationTime = now
+    end
+    return cachedDestX, cachedDestY
+end
+
+local destinationEvents = CreateFrame("Frame")
+for _, event in ipairs({ "SUPER_TRACKING_CHANGED", "USER_WAYPOINT_UPDATED", "ZONE_CHANGED_NEW_AREA",
+    "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "PLAYER_ENTERING_WORLD", "QUEST_POI_UPDATE" }) do
+    pcall(destinationEvents.RegisterEvent, destinationEvents, event) -- not every event exists on every client
+end
+destinationEvents:SetScript("OnEvent", function() lastDestinationTime = nil end)
+
 local function superTrackingCallback()
     if not IsSuperTrackingAnything() then
         updateSuperTrackingReadout(nil)
@@ -177,7 +226,7 @@ local function superTrackingCallback()
         return
     end
 
-    local destX, destY = superTrackingDestination()
+    local destX, destY = currentDestination()
     if not (destX and destY) then
         updateSuperTrackingReadout(nil)
         return
@@ -454,11 +503,11 @@ local function formatETA(seconds)
     local minutes = math.floor((seconds % 3600) / 60)
     local secs = seconds % 60
 
-    local parts = {}
-    if hours > 0 then table.insert(parts, hours .. "h") end
-    if minutes > 0 then table.insert(parts, minutes .. "m") end
-    if secs > 0 then table.insert(parts, secs .. "s") end
-    return table.concat(parts, " ")
+    local text = ""
+    if hours > 0 then text = hours .. "h" end
+    if minutes > 0 then text = (text ~= "" and text .. " " or "") .. minutes .. "m" end
+    if secs > 0 then text = (text ~= "" and text .. " " or "") .. secs .. "s" end
+    return text
 end
 
 -- ETA estimation. Rather than the player's raw movement speed (GetUnitSpeed), which counts
@@ -534,13 +583,19 @@ etaEvents:SetScript("OnEvent", resetETA)
 --- (the same one SuperTrackedFrame uses) rather than a hardcoded unit suffix, since the
 --- label isn't the same in every locale.
 --- @param distance number|nil Distance to the super-tracked target, in yards.
+local shownYards, shownSeconds -- what the distance and ETA texts currently show
 updateSuperTrackingReadout = function(distance)
     if distance then
         updateETA(distance)
     end
 
+    -- The texts are only rebuilt when the whole yards / seconds they show change, not every frame
     if distance and showTrackingDistance then
-        superTrackingDistanceText:SetText(IN_GAME_NAVIGATION_RANGE:format(formatDistance(distance)))
+        local yards = math.ceil(distance)
+        if yards ~= shownYards then
+            superTrackingDistanceText:SetText(IN_GAME_NAVIGATION_RANGE:format(formatDistance(yards)))
+            shownYards = yards
+        end
         superTrackingDistanceText:Show()
     else
         superTrackingDistanceText:Hide()
@@ -548,7 +603,11 @@ updateSuperTrackingReadout = function(distance)
 
     -- Like Waypoint UI, the ETA line only appears while there's an estimate to show.
     if distance and showTrackingETA and etaSeconds and etaSeconds >= 0.5 then
-        superTrackingETAText:SetText(formatETA(etaSeconds))
+        local seconds = math.floor(etaSeconds + 0.5)
+        if seconds ~= shownSeconds then
+            superTrackingETAText:SetText(formatETA(seconds))
+            shownSeconds = seconds
+        end
         superTrackingETAText:Show()
     else
         superTrackingETAText:Hide()
@@ -652,9 +711,9 @@ local function collectSuperTrackingDebug(out)
     out(" SuperTrackedFrame.Icon atlas:", icon and icon:GetAtlas())
     out(" superTrackingIconAtlas (last applied):", superTrackingIconAtlas)
 
-    -- Sanity check: round-trip the player's own position through HereBeDragons'
-    -- zone conversion. If this doesn't roughly match GetPlayerWorldPosition, HBD
-    -- doesn't know how to convert coordinates for this map at all, regardless of
+    -- Sanity check: round-trip the player's own position through the map API's
+    -- zone conversion. If this doesn't roughly match GetPlayerWorldPosition, the map API
+    -- can't convert coordinates for this map at all, regardless of
     -- which Blizzard API supplies a destination.
     if map then
         local selfPos = GetPlayerMapPosition(map, "player")
