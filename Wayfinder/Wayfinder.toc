@@ -4,9 +4,6 @@
 ## Author: Wyomarus
 ## Notes: A simple addon to help you find your way around the world of Azeroth.
 ## IconTexture: Interface\AddOns\Wayfinder\Media\Icon.jpg
-## AddonCompartmentFunc: Wayfinder_OnAddonCompartmentClick
-## AddonCompartmentFuncOnEnter: Wayfinder_OnAddonCompartmentEnter
-## AddonCompartmentFuncOnLeave: Wayfinder_OnAddonCompartmentLeave
 ## SavedVariables: WayfinderDebug, WayfinderSettings
 ## LoadSavedVariablesFirst: 1
 
@@ -18,6 +15,5 @@ CardinalPoints.lua
 SuperTracking.lua
 SettingsKit.lua
 Settings.lua
-AddonCompartment.lua
 Events.lua
 Slash.lua

@@ -28,7 +28,7 @@ The banner is locked in place by default; `/wayfinder unlock` it to drag it to a
 
 SuperTracking currently follows quests, user-placed waypoints, area POIs, taxi nodes, and your own corpse. Other trackable target types (scenarios, world content, party members, vignettes) aren't handled yet, so the marker just won't appear for those.
 
-All of the above is configurable from a "Wayfinder" panel in the game's own Settings (Escape > Options > AddOns), reachable with `/wayfinder settings` or from the minimap's Addon Compartment dropdown, which also toggles the banner with a click.
+All of the above is configurable from a "Wayfinder" panel in the game's own Settings (Escape > Options > AddOns), also reachable with `/wayfinder settings`.
 
 ## Commands
 
