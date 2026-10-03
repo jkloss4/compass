@@ -104,7 +104,8 @@ local function createTab(text)
     tab:SetHighlightFontObject(GameFontHighlightSmall)
     tab:SetDisabledFontObject(GameFontHighlightSmall)
     tab:SetText(text)
-    tab:SetWidth(math.max(80, label:GetStringWidth() + 40))
+    -- sized like Ace3 (BlizzMove) tabs: the text plus 4px, plus the two 20px caps
+    tab:SetWidth(label:GetStringWidth() + 44)
 
     tab:SetHighlightTexture("Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight", "ADD")
     local highlight = tab:GetHighlightTexture()
@@ -118,7 +119,8 @@ local function createTab(text)
         for _, piece in ipairs(self.inactivePieces) do piece:SetShown(not selected) end
         self:SetEnabled(not selected)
         label:ClearAllPoints()
-        label:SetPoint("CENTER", 0, selected and -2 or -3)
+        label:SetPoint("LEFT", 14, selected and -2 or -3)
+        label:SetPoint("RIGHT", -12, selected and -2 or -3)
     end
 
     return tab
