@@ -1,6 +1,7 @@
 -- SettingsKit: option pages in Options > AddOns that look like Blizzard's own (Controls, Keybindings, Graphics...).
 --
--- The same file ships in every addon of Jay's (BubbleFont, ForeverQuestMark, Wayfinder, TipTacOptions, QuickEmote):
+-- The same file ships in every addon of Jay's (Bubble Font Size, Nameplate Quest Markers, Compass, Tooltip Anchors,
+-- Quick Emote, Clean Bags):
 -- change it in one place and copy it to the others. Measurements and templates come from Blizzard's settings code
 -- (Blizzard_SettingsList, Blizzard_SettingControls, Graphics.xml).
 --

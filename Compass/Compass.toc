@@ -3,7 +3,7 @@
 ## Title: Compass
 ## Author: Wyomarus
 ## Notes: A compass banner and quest super tracking distance. /wayfinder for settings.
-## IconTexture: Interface\AddOns\Wayfinder\Media\Icon.jpg
+## IconTexture: Interface\AddOns\Compass\Media\Icon.jpg
 ## SavedVariables: WayfinderDebug, WayfinderSettings
 ## LoadSavedVariablesFirst: 1
 

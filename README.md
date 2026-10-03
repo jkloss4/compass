@@ -3,8 +3,8 @@
 A personal fork, for retail and WoW: Forever, of [Wayfinder](https://github.com/wyomarus/wayfinder) by **Wyomarus**: a compass
 banner at the top of the screen, with a marker, distance and ETA for whatever you're super-tracking.
 
-The addon folder keeps the original name, `Wayfinder`, so this **replaces** the upstream addon (don't install both)
-and your existing `WayfinderSettings` carry over. It's tuned to work alongside **Waypoint UI**.
+The addon folder is `Compass`. It keeps upstream's `WayfinderSettings` saved variable, so don't install it alongside
+the upstream addon. It's tuned to work alongside **Waypoint UI**.
 
 ## Changes from upstream
 
@@ -32,8 +32,8 @@ Slash commands: `/wayfinder` or `/wf` (see `/wf` for the list; `/wf settings` op
 
 ## Install
 
-Download `Wayfinder-Custom-<version>.zip` from the [latest release](../../releases/latest) and extract the
-`Wayfinder` folder into `World of Warcraft\_retail_\Interface\AddOns\` (for WoW: Forever, `_classic_beta_` instead of `_retail_`).
+Download `Compass-<version>.zip` from the [latest release](../../releases/latest) and extract the
+`Compass` folder into `World of Warcraft\_retail_\Interface\AddOns\` (for WoW: Forever, `_classic_beta_` instead of `_retail_`).
 
 An addon manager that installs from GitHub releases (e.g. WowUp: *Install from URL* with this repo's URL) can also
 install and update it, **but only if the repository is public**.
@@ -47,7 +47,7 @@ To update from the command line (works for a private repo, needs `gh auth login`
 ## Developing / releasing
 
 - Test local changes: `.\scripts\install-local.ps1` copies the addon folder into `AddOns`, then `/reload`.
-- After a WoW patch: bump `## Interface:` in `Wayfinder/Wayfinder.toc`.
+- After a WoW patch: bump `## Interface:` in `Compass/Compass.toc`.
 - Release: `git tag v1.1.0 && git push --tags`. The [Release workflow](.github/workflows/release.yml) stamps the
   version into the TOC, builds the zip (with a `release.json` so addon managers see it's a retail and Forever build), and
   publishes the GitHub release.

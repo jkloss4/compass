@@ -13,4 +13,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: lunarmodules/luacheck@v1
         with:
-          args: Wayfinder --only 011 --no-color
+          args: Compass --only 011 --no-color

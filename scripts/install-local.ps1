@@ -8,7 +8,7 @@ param(
   [string]$AddOnsPath = "C:\Games\Battle.net\Games\World of Warcraft\_retail_\Interface\AddOns"
 )
 $repo = Split-Path -Parent $PSScriptRoot
-foreach ($name in "Wayfinder") {
+foreach ($name in "Compass") {
   # /MIR makes the installed folder an exact mirror (removes files deleted from the repo); only touches this folder.
   robocopy (Join-Path $repo $name) (Join-Path $AddOnsPath $name) /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
   if ($LASTEXITCODE -ge 8) { throw "robocopy failed for $name (exit $LASTEXITCODE)" }

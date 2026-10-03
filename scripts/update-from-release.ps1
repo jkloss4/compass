@@ -18,7 +18,7 @@ if ($LASTEXITCODE -ne 0) { throw "gh release download failed" }
 
 $zip = Get-ChildItem $tmp -Filter *.zip | Select-Object -First 1
 Expand-Archive $zip.FullName -DestinationPath $tmp\out -Force
-foreach ($name in "Wayfinder") {
+foreach ($name in "Compass") {
   robocopy (Join-Path $tmp "out\$name") (Join-Path $AddOnsPath $name) /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
   if ($LASTEXITCODE -ge 8) { throw "robocopy failed for $name (exit $LASTEXITCODE)" }
 }

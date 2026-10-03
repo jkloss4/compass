@@ -18,7 +18,7 @@ jobs:
       - name: Stamp version from tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          sed -i "s/^## Version:.*/## Version: ${VERSION}/" Wayfinder/Wayfinder.toc
+          sed -i "s/^## Version:.*/## Version: ${VERSION}/" Compass/Compass.toc
 
       - name: Package
         run: |
@@ -26,7 +26,7 @@ jobs:
           # one release.json metadata entry per flavor, from the first "## Interface:" value of each:
           # 1xxxxx = mainline (retail), 16xxx = forever (WoW: Forever)
           METADATA="" SEEN=""
-          for I in $(grep -m1 '^## Interface:' Wayfinder/Wayfinder.toc | sed 's/## Interface: *//' | tr -d ' \r' | tr ',' ' '); do
+          for I in $(grep -m1 '^## Interface:' Compass/Compass.toc | sed 's/## Interface: *//' | tr -d ' \r' | tr ',' ' '); do
             if [ "$I" -ge 100000 ]; then FLAVOR=mainline
             elif [ "$I" -ge 16000 ] && [ "$I" -lt 20000 ]; then FLAVOR=forever
             else continue; fi
@@ -34,7 +34,7 @@ jobs:
             SEEN="$SEEN $FLAVOR"
             METADATA="${METADATA:+$METADATA,}{\"flavor\":\"$FLAVOR\",\"interface\":$I}"
           done
-          zip -r "$ZIP" Wayfinder
+          zip -r "$ZIP" Compass
           echo "{\"releases\":[{\"filename\":\"$ZIP\",\"nolib\":false,\"metadata\":[$METADATA]}]}" > release.json
 
       - name: Publish release
