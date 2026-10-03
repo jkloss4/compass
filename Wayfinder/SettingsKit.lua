@@ -571,9 +571,9 @@ function Page:Tabs(names, opts)
 
     local function MakeList()
         local list = NewList(self, section)
-        -- inset from the pane's border art, so row highlights stay inside it
-        list.scroll:SetPoint("TOPLEFT", 8, -26)
-        list.scroll:SetPoint("BOTTOMRIGHT", -20, -8)
+        -- inset from the pane's border art on every side, so rows (and their highlights) stay inside it
+        list.scroll:SetPoint("TOPLEFT", 8, -38)
+        list.scroll:SetPoint("BOTTOMRIGHT", -20, 4)
         -- the scroll bar sits outside the pane at the page's right edge, like the Graphics page's
         list.scroll.ScrollBar:ClearAllPoints()
         list.scroll.ScrollBar:SetPoint("TOPLEFT", self.frame, "TOPRIGHT", -SCROLLBAR_W, LIST_TOP - 4)
