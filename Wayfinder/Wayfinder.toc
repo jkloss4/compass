@@ -16,6 +16,7 @@ Wayfinder.lua
 CompassBanner.lua
 CardinalPoints.lua
 SuperTracking.lua
+SettingsKit.lua
 Settings.lua
 AddonCompartment.lua
 Events.lua
