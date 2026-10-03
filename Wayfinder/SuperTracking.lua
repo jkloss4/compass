@@ -692,7 +692,7 @@ local function debugSuperTracking()
         table.remove(WayfinderDebug, 1)
     end
 
-    print("Wayfinder: debug entry saved (" .. #WayfinderDebug .. " total). /reload or log out to flush to disk.")
+    print("Compass: debug entry saved (" .. #WayfinderDebug .. " total). /reload or log out to flush to disk.")
 end
 api.DebugSuperTracking = debugSuperTracking
 

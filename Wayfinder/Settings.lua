@@ -16,7 +16,7 @@ local Kit = addon.SettingsKit
 
 local DetailLevel = _C.CompassDetail
 
-local page = Kit.NewPage("Wayfinder")
+local page = Kit.NewPage("Compass")
 local general, colors = unpack(page:Tabs({ "General", "Colors" }))
 
 -- General ----------------------------------------------------------------------------------------------

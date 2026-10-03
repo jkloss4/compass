@@ -1,8 +1,8 @@
 ## Interface: 120100, 16001
 ## Version: v1.0.0
-## Title: Wayfinder (Custom)
+## Title: Compass
 ## Author: Wyomarus
-## Notes: A simple addon to help you find your way around the world of Azeroth.
+## Notes: A compass banner and quest super tracking distance. /wayfinder for settings.
 ## IconTexture: Interface\AddOns\Wayfinder\Media\Icon.jpg
 ## SavedVariables: WayfinderDebug, WayfinderSettings
 ## LoadSavedVariablesFirst: 1

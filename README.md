@@ -1,4 +1,4 @@
-# Wayfinder (Custom)
+# Compass
 
 A personal fork, for retail and WoW: Forever, of [Wayfinder](https://github.com/wyomarus/wayfinder) by **Wyomarus**: a compass
 banner at the top of the screen, with a marker, distance and ETA for whatever you're super-tracking.
