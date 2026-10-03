@@ -230,7 +230,7 @@ function List:Dropdown(label, options, get, set, tooltip, opts)
     control.Dropdown:SetWidth(220)
     HookHover(row, control.Dropdown)
 
-    control.Dropdown:SetupMenu(function(_, root)
+    local function Generate(_, root)
         for _, option in ipairs(Evaluate(options)) do
             local radio = root:CreateRadio(option.label,
                 function() return get() == option.value end,
@@ -245,11 +245,19 @@ function List:Dropdown(label, options, get, set, tooltip, opts)
                 end)
             end
         end
-    end)
+    end
     if opts.steppers == false then control:HideSteppers() end
 
+    -- SetupMenu builds the menu right away, reading the options and values; saved settings may not be loaded while
+    -- the page is built, so the menu is set up the first time the page is shown
+    local isSetUp = false
     self:OnRefresh(function()
-        control.Dropdown:GenerateMenu()
+        if isSetUp then
+            control.Dropdown:GenerateMenu()
+        else
+            control.Dropdown:SetupMenu(Generate)
+            isSetUp = true
+        end
         control:SetEnabled(row:UpdateEnabled())
     end)
     row.Control = control
@@ -363,8 +371,12 @@ function List:Text(text, font)
         label:SetText(Evaluate(text))
         row:SetHeight(math.max(14, label:GetStringHeight()))
     end
-    Update()
-    if type(text) == "function" then self:OnRefresh(Update) end
+    if type(text) == "function" then
+        -- filled in when the page is shown: saved settings may not be loaded while the page is built
+        self:OnRefresh(function() Update(); self:Layout() end)
+    else
+        Update()
+    end
     return row
 end
 
