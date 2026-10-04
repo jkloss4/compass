@@ -228,7 +228,20 @@ local function superTrackingDestination()
     if not trackingFunction then return nil, nil, "no lookup for type " .. trackingType end
 
     local x, y = trackingFunction()
-    return x, y, "type " .. trackingType .. " lookup on map " .. tostring(map)
+    if x and y then
+        return x, y, "type " .. trackingType .. " lookup on map " .. tostring(map)
+    end
+
+    -- Nothing on this map (the quest is in another zone, and there's no waypoint toward it): point straight at the
+    -- quest's pin on the continent map rather than hiding the marker
+    if trackingType == Enum.SuperTrackingType.Quest then
+        local continent = continentFor(map)
+        x, y = questPinOn(continent)
+        if x and y then
+            return x, y, "quest pin on continent map " .. continent
+        end
+    end
+    return nil, nil, "type " .. trackingType .. " lookup on map " .. tostring(map)
 end
 
 --- Callback for the SuperTracking element on the compass banner.
