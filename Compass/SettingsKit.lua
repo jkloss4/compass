@@ -16,6 +16,7 @@
 --   page:Checkbox("Enabled", get, set, "Tooltip text", { enabled = function() return ... end, indent = true })
 --   page:Slider("Size", 8, 32, 1, get, set, function(v) return v .. " pt" end, "Tooltip")
 --   page:Dropdown("Style", { { label = "A", value = "a", tooltip = "..." }, ... }, get, set, "Tooltip")
+--   page:CheckboxDropdown("Show", get, set, options, getOption, setOption, "Tooltip")  -- dropdown beside a checkbox
 --   page:ColorSwatch("Color", getRGBA, setRGBA, "Tooltip", { hasOpacity = true })
 --   page:Button("Do Something", onClick, "Tooltip")
 --   page:Expandable("Section", { key = "section", expanded = true }) ... page:EndExpandable()
@@ -186,6 +187,52 @@ function List:Checkbox(label, get, set, tooltip, opts)
         checkbox:SetChecked(get() and true or false)
         checkbox:SetEnabled(row:UpdateEnabled())
     end)
+    return row
+end
+
+-- A checkbox with a dropdown beside it, like Blizzard's checkbox-and-dropdown rows: the dropdown is only enabled while
+-- the box is checked. options as in Dropdown. opts.dropdownTooltip: shown over the dropdown.
+function List:CheckboxDropdown(label, get, set, options, getOption, setOption, tooltip, opts)
+    opts = opts or {}
+    local row = self:Checkbox(label, get, set, tooltip, opts)
+    local control = CreateFrame("Frame", nil, row, "SettingsDropdownWithButtonsTemplate")
+    control:SetPoint("LEFT", row.Checkbox, "RIGHT", 32, 0)
+    control.Dropdown:SetWidth(220)
+    control.Dropdown:HookScript("OnEnter", function(dropdown)
+        row.HoverBackground:Show()
+        ShowTooltip(dropdown, label, opts.dropdownTooltip or tooltip)
+    end)
+    control.Dropdown:HookScript("OnLeave", function() row:HideHover() end)
+
+    local function Generate(_, root)
+        for _, option in ipairs(Evaluate(options)) do
+            local radio = root:CreateRadio(option.label,
+                function() return getOption() == option.value end,
+                function()
+                    setOption(option.value)
+                    self.page:Refresh()
+                end)
+            if option.tooltip then
+                radio:SetTooltip(function(tip)
+                    GameTooltip_SetTitle(tip, option.label)
+                    GameTooltip_AddNormalLine(tip, option.tooltip)
+                end)
+            end
+        end
+    end
+
+    -- set up the first time the page is shown, like Dropdown (the checkbox's refresh runs first)
+    local isSetUp = false
+    self:OnRefresh(function()
+        if isSetUp then
+            control.Dropdown:GenerateMenu()
+        else
+            control.Dropdown:SetupMenu(Generate)
+            isSetUp = true
+        end
+        control:SetEnabled(row.Checkbox:IsEnabled() and row.Checkbox:GetChecked())
+    end)
+    row.Control = control
     return row
 end
 
