@@ -18,6 +18,7 @@
 --   page:Dropdown("Style", { { label = "A", value = "a", tooltip = "..." }, ... }, get, set, "Tooltip")
 --   page:CheckboxDropdown("Show", get, set, options, getOption, setOption, "Tooltip")  -- dropdown beside a checkbox
 --   page:ColorSwatch("Color", getRGBA, setRGBA, "Tooltip", { hasOpacity = true })
+--   page:CheckboxColorSwatch("Custom Color", get, set, getRGBA, setRGBA, "Tooltip")  -- swatch beside a checkbox
 --   page:Button("Do Something", onClick, "Tooltip")
 --   page:Expandable("Section", { key = "section", expanded = true }) ... page:EndExpandable()
 --   local general, colors = unpack(page:Tabs({ "General", "Colors" }))  -- Graphics-style tabbed pane; each tab is a
@@ -312,12 +313,9 @@ function List:Dropdown(label, options, get, set, tooltip, opts)
     return row
 end
 
--- get() -> r, g, b[, a]; set(r, g, b[, a]). opts.hasOpacity adds the picker's opacity slider.
-function List:ColorSwatch(label, get, set, tooltip, opts)
-    opts = opts or {}
-    local row = self:SettingRow(label, tooltip, opts)
+-- A color swatch on a row that opens Blizzard's color picker
+local function CreateSwatch(list, row, get, set, opts)
     local swatch = CreateFrame("Button", nil, row, "SettingsColorSwatchTemplate")
-    swatch:SetPoint("LEFT", row, "CENTER", -73, 0)
     swatch:SetScript("OnEnter", function(self) row:ShowHover(self) end)
     swatch:SetScript("OnLeave", function() row:HideHover() end)
     swatch:SetScript("OnClick", function()
@@ -325,21 +323,47 @@ function List:ColorSwatch(label, get, set, tooltip, opts)
         local function Changed()
             local newR, newG, newB = ColorPickerFrame:GetColorRGB()
             set(newR, newG, newB, opts.hasOpacity and ColorPickerFrame:GetColorAlpha() or a)
-            self.page:Refresh()
+            list.page:Refresh()
         end
         ColorPickerFrame:SetupColorPickerAndShow({
             r = r, g = g, b = b, opacity = a, hasOpacity = opts.hasOpacity,
             swatchFunc = Changed, opacityFunc = Changed,
-            cancelFunc = function() set(r, g, b, a); self.page:Refresh() end,
+            cancelFunc = function() set(r, g, b, a); list.page:Refresh() end,
         })
     end)
+    row.Swatch = swatch
+    return swatch
+end
+
+-- get() -> r, g, b[, a]; set(r, g, b[, a]). opts.hasOpacity adds the picker's opacity slider.
+function List:ColorSwatch(label, get, set, tooltip, opts)
+    opts = opts or {}
+    local row = self:SettingRow(label, tooltip, opts)
+    local swatch = CreateSwatch(self, row, get, set, opts)
+    swatch:SetPoint("LEFT", row, "CENTER", -73, 0)
 
     self:OnRefresh(function()
         local r, g, b = get()
         swatch:SetColorValue(CreateColor(r, g, b))
         swatch:SetEnabled(row:UpdateEnabled())
     end)
-    row.Swatch = swatch
+    return row
+end
+
+-- A checkbox with a color swatch beside it, like Blizzard's checkbox-and-swatch rows: the swatch is only enabled while
+-- the box is checked. getColor/setColor as in ColorSwatch.
+function List:CheckboxColorSwatch(label, get, set, getColor, setColor, tooltip, opts)
+    opts = opts or {}
+    local row = self:Checkbox(label, get, set, tooltip, opts)
+    local swatch = CreateSwatch(self, row, getColor, setColor, opts)
+    swatch:SetPoint("LEFT", row.Checkbox, "RIGHT", 12, 0)
+
+    -- the checkbox's refresh runs first
+    self:OnRefresh(function()
+        local r, g, b = getColor()
+        swatch:SetColorValue(CreateColor(r, g, b))
+        swatch:SetEnabled(row.Checkbox:IsEnabled() and row.Checkbox:GetChecked())
+    end)
     return row
 end
 
