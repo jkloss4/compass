@@ -171,9 +171,48 @@ end)
 --- Blizzard's own navigation UI (Blizzard_QuestNavigation) uses for the current
 --- super-tracked target regardless of type. Falls back to the per-type handlers
 --- in trackingFunctions for anything that API doesn't cover.
+local GetMapInfo = Map.GetMapInfo
+local CONTINENT = (Enum.UIMapType and Enum.UIMapType.Continent) or 2
+
+--- The continent the map belongs to (zones, cities and smaller maps sit under one).
+local function continentFor(map)
+    local info = map and GetMapInfo(map)
+    while info and info.mapType and info.mapType > CONTINENT and info.parentMapID and info.parentMapID ~= 0 do
+        info = GetMapInfo(info.parentMapID)
+    end
+    return info and info.mapType == CONTINENT and info.mapID or nil
+end
+
+--- The super-tracked quest's pin on a map, in world coordinates. A pin's x and y are on the map that was asked
+--- (Blizzard's QuestDataProvider places them on the shown map), and it's the quest's own location, unlike the next
+--- waypoint, which is a stop on the way there worked out from the map you're on.
+local function questPinOn(map)
+    local questID = GetSuperTrackedQuestID()
+    if not (questID and map) then return end
+    for _, poi in ipairs(GetQuestsOnMap(map) or {}) do
+        if poi.questID == questID then
+            return GetWorldCoordinatesFromZone(poi.x, poi.y, map)
+        end
+    end
+end
+
 --- @return number|nil x, number|nil y, string source Which lookup found it, for the trace
 local function superTrackingDestination()
     local map = GetBestMapForUnit("player")
+    -- On a flight the map you're over keeps changing, and with it the next waypoint (a different stop for each map),
+    -- so the marker jumped. The quest's pin on the continent map is the same from anywhere on the flight.
+    if UnitOnTaxi("player") and GetHighestPrioritySuperTrackingType() == Enum.SuperTrackingType.Quest then
+        local continent = continentFor(map)
+        local x, y = questPinOn(continent)
+        if x and y then
+            return x, y, "quest pin on continent map " .. continent
+        end
+        x, y = questPinOn(map)
+        if x and y then
+            return x, y, "quest pin on map " .. map
+        end
+        return nil, nil, "no quest pin on map " .. tostring(map) .. " or continent " .. tostring(continent)
+    end
     if map then
         local x, y = GetNextWaypointForMap(map)
         if x and y then
@@ -316,7 +355,7 @@ local function superTrackingQuest()
         if quests then
             for _, poi in ipairs(quests) do
                 if poi.questID == questID then
-                    return GetWorldCoordinatesFromZone(poi.x, poi.y, poi.mapID)
+                    return GetWorldCoordinatesFromZone(poi.x, poi.y, map) -- x and y are on the map asked
                 end
             end
         end
