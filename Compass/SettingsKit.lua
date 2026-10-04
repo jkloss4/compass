@@ -622,6 +622,10 @@ function Page:Tabs(names, opts)
         self.scroll:SetPoint("TOPLEFT", 0, LIST_TOP)
         self.scroll:SetPoint("TOPRIGHT", -SCROLLBAR_W, LIST_TOP)
         self.scroll:SetHeight(above)
+        -- the strip never scrolls: its list padding can make it a few pixels taller than the strip
+        self.scroll:EnableMouseWheel(false)
+        self.scroll.ScrollBar:Hide()
+        self.scroll.ScrollBar:HookScript("OnShow", self.scroll.ScrollBar.Hide)
     else
         self.scroll:Hide()
     end
