@@ -45,11 +45,16 @@ local SCROLLBAR_W = 20     -- space kept right of the list for the scroll bar
 
 local Tooltip = SettingsTooltip or GameTooltip
 
-local function ShowTooltip(owner, title, text)
+-- errorText: a red line after the text, e.g. why a setting is disabled
+local function ShowTooltip(owner, title, text, errorText)
     if not (title or text) then return end
     Tooltip:SetOwner(owner, "ANCHOR_RIGHT", -10, 0)
     if title then GameTooltip_AddHighlightLine(Tooltip, title) end
     if text then GameTooltip_AddNormalLine(Tooltip, text, true) end
+    if errorText then
+        GameTooltip_AddBlankLineToTooltip(Tooltip)
+        GameTooltip_AddErrorLine(Tooltip, errorText, true)
+    end
     Tooltip:Show()
 end
 
@@ -122,6 +127,7 @@ end
 
 -- A setting row: gold label on the left (gray while disabled), hover highlight and tooltip like Blizzard's rows.
 -- opts.indent: true or a number of levels. opts.enabled: function (or value) deciding whether it can be changed.
+-- opts.disabledTooltip: text (or function) shown in red while it's disabled, saying why. tooltip can be a function.
 function List:SettingRow(label, tooltip, opts)
     opts = opts or {}
     local row = self:NewRow(ROW_H)
@@ -146,7 +152,8 @@ function List:SettingRow(label, tooltip, opts)
     row.Hover:SetPoint("BOTTOMRIGHT", row, "BOTTOM", -80, 0)
     function row:ShowHover(owner)
         self.HoverBackground:Show()
-        ShowTooltip(owner or self.Hover, label, tooltip)
+        local reason = opts.disabledTooltip and not self.IsEnabledSetting() and Evaluate(opts.disabledTooltip) or nil
+        ShowTooltip(owner or self.Hover, label, Evaluate(tooltip), reason)
     end
     function row:HideHover()
         self.HoverBackground:Hide()
@@ -201,7 +208,7 @@ function List:CheckboxDropdown(label, get, set, options, getOption, setOption, t
     control.Dropdown:SetWidth(220)
     control.Dropdown:HookScript("OnEnter", function(dropdown)
         row.HoverBackground:Show()
-        ShowTooltip(dropdown, label, opts.dropdownTooltip or tooltip)
+        ShowTooltip(dropdown, label, Evaluate(opts.dropdownTooltip or tooltip))
     end)
     control.Dropdown:HookScript("OnLeave", function() row:HideHover() end)
 
