@@ -110,6 +110,7 @@ local function PrintUsage()
     print("/wayfinder distance enable|disable - Show or hide the SuperTracking distance readout")
     print("/wayfinder eta enable|disable - Show or hide the SuperTracking ETA readout")
     print("/wayfinder debug tracking - Print SuperTracking diagnostic info")
+    print("/wayfinder debug trace - Print a line each time the tracked destination changes (toggle)")
 end
 
 local commandHandlers = {
@@ -138,6 +139,10 @@ local commandHandlers = {
     },
     debug = {
         tracking = DebugSuperTracking,
+        trace = function()
+            WayfinderSettings.trace = not WayfinderSettings.trace or nil
+            print("Compass destination trace " .. (WayfinderSettings.trace and "on" or "off") .. ".")
+        end,
     },
 }
 

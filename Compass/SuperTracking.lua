@@ -171,22 +171,25 @@ end)
 --- Blizzard's own navigation UI (Blizzard_QuestNavigation) uses for the current
 --- super-tracked target regardless of type. Falls back to the per-type handlers
 --- in trackingFunctions for anything that API doesn't cover.
+--- @return number|nil x, number|nil y, string source Which lookup found it, for the trace
 local function superTrackingDestination()
     local map = GetBestMapForUnit("player")
     if map then
         local x, y = GetNextWaypointForMap(map)
         if x and y then
-            return GetWorldCoordinatesFromZone(x, y, map)
+            local worldX, worldY = GetWorldCoordinatesFromZone(x, y, map)
+            return worldX, worldY, "navigation waypoint on map " .. map
         end
     end
 
     local trackingType = GetHighestPrioritySuperTrackingType()
-    if not trackingType then return end
+    if not trackingType then return nil, nil, "nothing tracked" end
 
     local trackingFunction = trackingFunctions[trackingType]
-    if not trackingFunction then return end
+    if not trackingFunction then return nil, nil, "no lookup for type " .. trackingType end
 
-    return trackingFunction()
+    local x, y = trackingFunction()
+    return x, y, "type " .. trackingType .. " lookup on map " .. tostring(map)
 end
 
 --- Callback for the SuperTracking element on the compass banner.
@@ -195,11 +198,32 @@ end
 -- target, waypoint or zone looks it up again straight away. The marker's direction still updates every frame.
 local DESTINATION_INTERVAL = 0.2
 local cachedDestX, cachedDestY, lastDestinationTime
+local lastTraceX, lastTraceY, lastTraceSource
+
+--- /wayfinder debug trace: a chat line each time the destination moves (more than a yard), its lookup changes, or
+--- it's lost, to see why the marker jumps or disappears.
+local function traceDestination(x, y, source, held)
+    if not WayfinderSettings.trace then return end
+    local moved = (x == nil) ~= (lastTraceX == nil)
+        or (x and lastTraceX and ((x - lastTraceX) ^ 2 + (y - lastTraceY) ^ 2) > 1)
+    if not moved and source == lastTraceSource then return end
+    lastTraceX, lastTraceY, lastTraceSource = x, y, source
+    print(("|cff808080Compass %s: %s, %s via %s%s%s|r"):format(date("%H:%M:%S"),
+        x and ("%.0f"):format(x) or "none", y and ("%.0f"):format(y) or "none", source,
+        UnitOnTaxi("player") and ", on a flight" or "", held and ", kept the last one" or ""))
+end
 
 local function currentDestination()
     local now = GetTime()
     if not lastDestinationTime or now - lastDestinationTime >= DESTINATION_INTERVAL then
-        cachedDestX, cachedDestY = superTrackingDestination()
+        local x, y, source = superTrackingDestination()
+        -- Over a zone the target isn't in, nothing is found on that zone's map. The target hasn't moved, so on a
+        -- flight the marker keeps pointing at where it was last found instead of disappearing.
+        local held = not (x and y) and cachedDestX and UnitOnTaxi("player")
+        if not held then
+            cachedDestX, cachedDestY = x, y
+        end
+        traceDestination(cachedDestX, cachedDestY, source, held)
         lastDestinationTime = now
     end
     return cachedDestX, cachedDestY
@@ -210,7 +234,12 @@ for _, event in ipairs({ "SUPER_TRACKING_CHANGED", "USER_WAYPOINT_UPDATED", "ZON
     "ZONE_CHANGED", "ZONE_CHANGED_INDOORS", "PLAYER_ENTERING_WORLD", "QUEST_POI_UPDATE" }) do
     pcall(destinationEvents.RegisterEvent, destinationEvents, event) -- not every event exists on every client
 end
-destinationEvents:SetScript("OnEvent", function() lastDestinationTime = nil end)
+destinationEvents:SetScript("OnEvent", function(_, event)
+    lastDestinationTime = nil
+    if event == "SUPER_TRACKING_CHANGED" or event == "USER_WAYPOINT_UPDATED" then
+        cachedDestX, cachedDestY = nil, nil -- a new target: never keep the old one's position
+    end
+end)
 
 local function superTrackingCallback()
     if not IsSuperTrackingAnything() then
