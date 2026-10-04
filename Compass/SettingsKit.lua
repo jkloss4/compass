@@ -612,13 +612,22 @@ end
 
 -- Graphics-style tabbed pane filling the rest of the page: the page's own list is hidden and each tab gets its own.
 -- names: tab labels. opts.title: text left of the tabs. opts.shared: one list for all tabs (tabs only call
--- opts.onSelect(index)), for pages where the tabs switch what the same controls edit.
+-- opts.onSelect(index)), for pages where the tabs switch what the same controls edit. opts.above: height of a strip
+-- above the tabs that keeps the page's own list, for rows shown on every tab (added to the page itself).
 function Page:Tabs(names, opts)
     opts = opts or {}
-    self.scroll:Hide()
+    local above = opts.above or 0
+    if above > 0 then
+        self.scroll:ClearAllPoints()
+        self.scroll:SetPoint("TOPLEFT", 0, LIST_TOP)
+        self.scroll:SetPoint("TOPRIGHT", -SCROLLBAR_W, LIST_TOP)
+        self.scroll:SetHeight(above)
+    else
+        self.scroll:Hide()
+    end
 
     local section = CreateFrame("Frame", nil, self.frame)
-    section:SetPoint("TOPLEFT", 22, LIST_TOP - 18)
+    section:SetPoint("TOPLEFT", 22, LIST_TOP - 18 - above)
     section:SetPoint("BOTTOMRIGHT", -30, 22) -- leaves room right of the pane for the scroll bar
 
     if opts.title then
@@ -655,7 +664,7 @@ function Page:Tabs(names, opts)
         list.scroll:SetPoint("BOTTOMRIGHT", -20, 4)
         -- the scroll bar sits outside the pane at the page's right edge, like the Graphics page's
         list.scroll.ScrollBar:ClearAllPoints()
-        list.scroll.ScrollBar:SetPoint("TOPLEFT", self.frame, "TOPRIGHT", -SCROLLBAR_W, LIST_TOP - 4)
+        list.scroll.ScrollBar:SetPoint("TOPLEFT", self.frame, "TOPRIGHT", -SCROLLBAR_W, LIST_TOP - 4 - above)
         list.scroll.ScrollBar:SetPoint("BOTTOMLEFT", self.frame, "BOTTOMRIGHT", -SCROLLBAR_W - 1, 9)
         self.lists[#self.lists + 1] = list
         return list
