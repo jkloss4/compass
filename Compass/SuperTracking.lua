@@ -247,7 +247,16 @@ local function traceDestination(x, y, source, held)
         or (x and lastTraceX and ((x - lastTraceX) ^ 2 + (y - lastTraceY) ^ 2) > 1)
     if not moved and source == lastTraceSource then return end
     lastTraceX, lastTraceY, lastTraceSource = x, y, source
-    print(("|cff808080Compass %s: %s, %s via %s%s%s|r"):format(date("%H:%M:%S"),
+    -- to a chat tab named "Trace" when there is one, else the main chat window
+    local chat = DEFAULT_CHAT_FRAME
+    for i = 1, NUM_CHAT_WINDOWS or 10 do
+        local name = GetChatWindowInfo(i)
+        if name and name:lower() == "trace" and _G["ChatFrame" .. i] then
+            chat = _G["ChatFrame" .. i]
+            break
+        end
+    end
+    chat:AddMessage(("|cff808080Compass %s: %s, %s via %s%s%s|r"):format(date("%H:%M:%S"),
         x and ("%.0f"):format(x) or "none", y and ("%.0f"):format(y) or "none", source,
         UnitOnTaxi("player") and ", on a flight" or "", held and ", kept the last one" or ""))
 end
