@@ -28,7 +28,7 @@ the upstream addon. It's tuned to work alongside **Waypoint UI**.
 - The CurseForge/Wago/WoWInterface project ids have been removed from the TOC on purpose, so managers won't replace
   this with upstream.
 
-Slash commands: `/wayfinder` or `/wf` (see `/wf` for the list; `/wf settings` opens the options).
+Slash commands: `/compass` (see `/compass` for the list; `/compass settings` opens the options). The original `/wayfinder` and `/wf` still work.
 
 ## Install
 

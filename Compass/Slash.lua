@@ -24,7 +24,7 @@ end
 
 local function UnlockCompassBanner()
     api.CompassBanner.Unlock()
-    print("Compass banner unlocked. Drag it to reposition, then /wayfinder lock to lock it back in place.")
+    print("Compass banner unlocked. Drag it to reposition, then /compass lock to lock it back in place.")
 end
 
 local function ResetCompassBannerPosition()
@@ -84,7 +84,7 @@ local function SetCompassDetail(arg)
     local DetailLevel = _C.CompassDetail
     local level = tonumber(arg)
     if not level or level < DetailLevel.None or level > DetailLevel.Pips or level % 1 ~= 0 then
-        print("Usage: /wayfinder detail <0-3>")
+        print("Usage: /compass detail <0-3>")
         print(" 0 - hide compass detail entirely")
         print(" 1 - cardinal directions only (N, E, S, W)")
         print(" 2 - cardinal and intercardinal directions")
@@ -98,19 +98,19 @@ end
 
 local function PrintUsage()
     print("Usage:")
-    print("/wayfinder show - Show the compass banner")
-    print("/wayfinder hide - Hide the compass banner")
-    print("/wayfinder lock - Lock the compass banner in place")
-    print("/wayfinder unlock - Unlock the compass banner so it can be dragged")
-    print("/wayfinder resetposition - Reset the compass banner to its default position")
-    print("/wayfinder settings - Open the Compass settings panel")
-    print("/wayfinder compass enable|disable - Enable or disable the CardinalPoints")
-    print("/wayfinder detail <0-3> - Set how much compass detail is shown")
-    print("/wayfinder tracking enable|disable - Enable or disable SuperTracking")
-    print("/wayfinder distance enable|disable - Show or hide the SuperTracking distance readout")
-    print("/wayfinder eta enable|disable - Show or hide the SuperTracking ETA readout")
-    print("/wayfinder debug tracking - Print SuperTracking diagnostic info")
-    print("/wayfinder debug trace - Print a line each time the tracked destination changes (toggle)")
+    print("/compass show - Show the compass banner")
+    print("/compass hide - Hide the compass banner")
+    print("/compass lock - Lock the compass banner in place")
+    print("/compass unlock - Unlock the compass banner so it can be dragged")
+    print("/compass resetposition - Reset the compass banner to its default position")
+    print("/compass settings - Open the Compass settings panel")
+    print("/compass directions enable|disable - Show or hide the direction markers (N, NE, E...)")
+    print("/compass detail <0-3> - Set how much compass detail is shown")
+    print("/compass tracking enable|disable - Enable or disable SuperTracking")
+    print("/compass distance enable|disable - Show or hide the SuperTracking distance readout")
+    print("/compass eta enable|disable - Show or hide the SuperTracking ETA readout")
+    print("/compass debug tracking - Print SuperTracking diagnostic info")
+    print("/compass debug trace - Print a line each time the tracked destination changes (toggle)")
 end
 
 local commandHandlers = {
@@ -120,7 +120,7 @@ local commandHandlers = {
     unlock = UnlockCompassBanner,
     resetposition = ResetCompassBannerPosition,
     settings = OpenSettings,
-    compass = {
+    directions = {
         enable = EnableCardinalPoints,
         disable = DisableCardinalPoints,
     },
@@ -145,11 +145,12 @@ local commandHandlers = {
         end,
     },
 }
+commandHandlers.compass = commandHandlers.directions -- its old name, from before the command was /compass
 
 --- Dispatch a slash command: look up the first word in commandHandlers, then either
 --- call it directly (with the rest of the message as its argument) or, if it maps to
 --- a table instead, look up the second word in that table and call it with no argument.
---- @param msg string The text after "/wayfinder" or "/wf".
+--- @param msg string The text after "/compass" (or the original addon's "/wayfinder" or "/wf").
 local function HandleSlashCommands(msg)
     local command, subcommand = msg:match("^(%S*)%s*(.-)$")
     local handler = commandHandlers[command]
@@ -170,5 +171,6 @@ end
 
 local SlashCmdList = SlashCmdList
 SlashCmdList["WAYFINDER"] = HandleSlashCommands
-_G.SLASH_WAYFINDER1 = "/wayfinder"
-_G.SLASH_WAYFINDER2 = "/wf"
+_G.SLASH_WAYFINDER1 = "/compass"
+_G.SLASH_WAYFINDER2 = "/wayfinder" -- the original addon's commands still work
+_G.SLASH_WAYFINDER3 = "/wf"

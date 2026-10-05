@@ -252,7 +252,7 @@ local DESTINATION_INTERVAL = 0.2
 local cachedDestX, cachedDestY, lastDestinationTime
 local lastTraceX, lastTraceY, lastTraceSource
 
---- /wayfinder debug trace: a chat line each time the destination moves (more than a yard), its lookup changes, or
+--- /compass debug trace: a chat line each time the destination moves (more than a yard), its lookup changes, or
 --- it's lost, to see why the marker jumps or disappears.
 local function traceDestination(x, y, source, held)
     if not WayfinderSettings.trace then return end
