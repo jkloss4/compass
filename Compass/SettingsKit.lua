@@ -86,7 +86,7 @@ local function NewList(page, parent)
     scroll:SetScrollChild(content)
     scroll:SetScript("OnSizeChanged", function(_, width) content:SetWidth(width) end)
 
-    return setmetatable({ page = page, scroll = scroll, content = content, rows = {}, refreshers = {} }, List)
+    return setmetatable({ page = page, scroll = scroll, content = content, rows = {}, refreshers = {}, pool = {} }, List)
 end
 
 -- Stack the rows that aren't inside a collapsed section
@@ -117,9 +117,16 @@ function List:OnRefresh(fn)
     self.refreshers[#self.refreshers + 1] = fn
 end
 
--- Remove every row (and its refresh function), to rebuild the list
+-- Remove every row (and its refresh function), to rebuild the list. WoW never frees frames, so rows of a kind that
+-- can be reused (see SettingRow) are kept in the list's pool and taken again by the rebuild instead of new frames.
 function List:Clear()
-    for _, row in ipairs(self.rows) do row:Hide() end
+    for _, row in ipairs(self.rows) do
+        row:Hide()
+        if row.kind then
+            self.pool[row.kind] = self.pool[row.kind] or {}
+            table.insert(self.pool[row.kind], row)
+        end
+    end
     wipe(self.rows)
     wipe(self.refreshers)
     self.section = nil
@@ -128,47 +135,65 @@ end
 -- A setting row: gold label on the left (gray while disabled), hover highlight and tooltip like Blizzard's rows.
 -- opts.indent: true or a number of levels. opts.enabled: function (or value) deciding whether it can be changed.
 -- opts.disabledTooltip: text (or function) shown in red while it's disabled, saying why. tooltip can be a function.
-function List:SettingRow(label, tooltip, opts)
+-- kind (optional): the control's name; a cleared row of that kind is reused. Returns the row and whether it was reused
+-- (its control already exists then, and only needs its new settings).
+function List:SettingRow(label, tooltip, opts, kind)
     opts = opts or {}
-    local row = self:NewRow(ROW_H)
-    local indent = (opts.indent == true and 1 or opts.indent or 0) * INDENT
+    local pool = kind and self.pool[kind]
+    local row = pool and table.remove(pool)
+    local reused = row ~= nil
 
-    row.Text = row:CreateFontString(nil, "OVERLAY", indent > 0 and "GameFontNormalSmall" or "GameFontNormal")
-    row.Text:SetJustifyH("LEFT")
-    row.Text:SetWordWrap(false)
+    if reused then
+        row.section, row.hidden = self.section, nil
+        self.rows[#self.rows + 1] = row
+    else
+        row = self:NewRow(ROW_H)
+        row.kind = kind
+
+        row.Text = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        row.Text:SetJustifyH("LEFT")
+        row.Text:SetWordWrap(false)
+
+        row.HoverBackground = row:CreateTexture(nil, "BACKGROUND")
+        row.HoverBackground:SetPoint("TOPLEFT", -10, 0)
+        row.HoverBackground:SetPoint("BOTTOMRIGHT", -5, 0)
+        row.HoverBackground:SetColorTexture(1, 1, 1, 0.1)
+
+        -- the label half of the row shows the tooltip (and clicks a checkbox, like Blizzard's)
+        row.Hover = CreateFrame("Frame", nil, row)
+        row.Hover:SetPoint("TOPLEFT")
+        row.Hover:SetPoint("BOTTOMRIGHT", row, "BOTTOM", -80, 0)
+        function row:ShowHover(owner)
+            self.HoverBackground:Show()
+            local o = self.opts
+            local reason = o.disabledTooltip and not self.IsEnabledSetting() and Evaluate(o.disabledTooltip) or nil
+            ShowTooltip(owner or self.Hover, self.label, Evaluate(self.tooltip), reason)
+        end
+        function row:HideHover()
+            self.HoverBackground:Hide()
+            HideTooltip()
+        end
+        row.Hover:SetScript("OnEnter", function() row:ShowHover() end)
+        row.Hover:SetScript("OnLeave", function() row:HideHover() end)
+
+        row.IsEnabledSetting = function() return row.opts.enabled == nil or Evaluate(row.opts.enabled) end
+        function row:UpdateEnabled()
+            local enabled = self.IsEnabledSetting()
+            self.Text:SetTextColor((enabled and NORMAL_FONT_COLOR or GRAY_FONT_COLOR):GetRGB())
+            return enabled
+        end
+    end
+
+    -- this row's settings (a reused row gets new ones)
+    row.label, row.tooltip, row.opts = label, tooltip, opts
+    local indent = (opts.indent == true and 1 or opts.indent or 0) * INDENT
+    row.Text:SetFontObject(indent > 0 and "GameFontNormalSmall" or "GameFontNormal")
+    row.Text:ClearAllPoints()
     row.Text:SetPoint("LEFT", LABEL_X + indent, 0)
     row.Text:SetPoint("RIGHT", row, "CENTER", -85, 0)
     row.Text:SetText(label)
-
-    row.HoverBackground = row:CreateTexture(nil, "BACKGROUND")
-    row.HoverBackground:SetPoint("TOPLEFT", -10, 0)
-    row.HoverBackground:SetPoint("BOTTOMRIGHT", -5, 0)
-    row.HoverBackground:SetColorTexture(1, 1, 1, 0.1)
     row.HoverBackground:Hide()
-
-    -- the label half of the row shows the tooltip (and clicks a checkbox, like Blizzard's)
-    row.Hover = CreateFrame("Frame", nil, row)
-    row.Hover:SetPoint("TOPLEFT")
-    row.Hover:SetPoint("BOTTOMRIGHT", row, "BOTTOM", -80, 0)
-    function row:ShowHover(owner)
-        self.HoverBackground:Show()
-        local reason = opts.disabledTooltip and not self.IsEnabledSetting() and Evaluate(opts.disabledTooltip) or nil
-        ShowTooltip(owner or self.Hover, label, Evaluate(tooltip), reason)
-    end
-    function row:HideHover()
-        self.HoverBackground:Hide()
-        HideTooltip()
-    end
-    row.Hover:SetScript("OnEnter", function() row:ShowHover() end)
-    row.Hover:SetScript("OnLeave", function() row:HideHover() end)
-
-    row.IsEnabledSetting = function() return opts.enabled == nil or Evaluate(opts.enabled) end
-    function row:UpdateEnabled()
-        local enabled = self.IsEnabledSetting()
-        self.Text:SetTextColor((enabled and NORMAL_FONT_COLOR or GRAY_FONT_COLOR):GetRGB())
-        return enabled
-    end
-    return row
+    return row, reused
 end
 
 -- Forward a control's hover to its row's highlight and tooltip
@@ -178,21 +203,26 @@ local function HookHover(row, control)
 end
 
 function List:Checkbox(label, get, set, tooltip, opts)
-    local row = self:SettingRow(label, tooltip, opts)
-    local checkbox = CreateFrame("CheckButton", nil, row, "SettingsCheckboxTemplate")
-    checkbox:SetPoint("LEFT", row, "CENTER", CONTROL_X, 0)
-    checkbox:SetScript("OnEnter", function(self) row:ShowHover(self) end)
-    checkbox:SetScript("OnLeave", function() row:HideHover() end)
-    checkbox:SetScript("OnClick", function(self)
-        PlaySound(self:GetChecked() and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
-        set(self:GetChecked() and true or false)
-        row.list.page:Refresh()
-    end)
-    row.Hover:SetScript("OnMouseUp", function() if checkbox:IsEnabled() then checkbox:Click() end end)
-    row.list, row.Checkbox = self, checkbox
+    local row, reused = self:SettingRow(label, tooltip, opts, "Checkbox")
+    row.get, row.set = get, set
+    if not reused then
+        local checkbox = CreateFrame("CheckButton", nil, row, "SettingsCheckboxTemplate")
+        checkbox:SetPoint("LEFT", row, "CENTER", CONTROL_X, 0)
+        checkbox:SetScript("OnEnter", function(self) row:ShowHover(self) end)
+        checkbox:SetScript("OnLeave", function() row:HideHover() end)
+        checkbox:SetScript("OnClick", function(self)
+            PlaySound(self:GetChecked() and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+            row.set(self:GetChecked() and true or false)
+            row.list.page:Refresh()
+        end)
+        row.Hover:SetScript("OnMouseUp", function() if checkbox:IsEnabled() then checkbox:Click() end end)
+        row.Checkbox = checkbox
+    end
+    row.list = self
 
+    local checkbox = row.Checkbox
     self:OnRefresh(function()
-        checkbox:SetChecked(get() and true or false)
+        checkbox:SetChecked(row.get() and true or false)
         checkbox:SetEnabled(row:UpdateEnabled())
     end)
     return row
@@ -203,6 +233,7 @@ end
 function List:CheckboxDropdown(label, get, set, options, getOption, setOption, tooltip, opts)
     opts = opts or {}
     local row = self:Checkbox(label, get, set, tooltip, opts)
+    row.kind = nil -- has a control of its own beside the checkbox: never reused as a plain checkbox
     local control = CreateFrame("Frame", nil, row, "SettingsDropdownWithButtonsTemplate")
     control:SetPoint("LEFT", row.Checkbox, "RIGHT", 32, 0)
     control.Dropdown:SetWidth(220)
@@ -362,6 +393,7 @@ end
 function List:CheckboxColorSwatch(label, get, set, getColor, setColor, tooltip, opts)
     opts = opts or {}
     local row = self:Checkbox(label, get, set, tooltip, opts)
+    row.kind = nil -- has a control of its own beside the checkbox: never reused as a plain checkbox
     local swatch = CreateSwatch(self, row, getColor, setColor, opts)
     swatch:SetPoint("LEFT", row.Checkbox, "RIGHT", 12, 0)
 
