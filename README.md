@@ -25,6 +25,8 @@ the upstream addon. It's tuned to work alongside **Waypoint UI**.
 - **Compass colors:** configurable color and opacity for the cardinal and intercardinal letters, tick marks and
   center line (Blizzard's color picker), with a reset.
 - The marker and readout draw above the compass letters.
+- **Move Top Widgets Below Compass:** moves the game's top-center widgets (zone objectives, capture bars, event
+  timers) under the compass so they don't overlap it, with adjustable spacing (default 32 px).
 - The CurseForge/Wago/WoWInterface project ids have been removed from the TOC on purpose, so managers won't replace
   this with upstream.
 

@@ -284,6 +284,73 @@ local function onUpdate()
     end
 end
 
+-- The game's top-center widget area (zone objectives, capture bars, event timers) is pinned
+-- to the top of the screen, where it overlaps the compass. Edit Mode can't move it, so this
+-- optionally anchors it just below the compass instead (following the compass when dragged),
+-- and puts it back where the game had it when turned off or while the compass is hidden.
+-- The default gap also clears the super-tracking distance and ETA lines that hang under the compass.
+local DEFAULT_WIDGET_GAP = 32
+local widgetFrame = UIWidgetTopCenterContainerFrame
+local widgetDefaultPoints
+local movingWidgets = false
+local widgetsPending = false
+
+local function placeTopWidgets()
+    if not widgetFrame then return end
+    if InCombatLockdown() and widgetFrame:IsProtected() then
+        widgetsPending = true
+        return
+    end
+    widgetsPending = false
+
+    if not widgetDefaultPoints then
+        widgetDefaultPoints = {}
+        for i = 1, widgetFrame:GetNumPoints() do
+            widgetDefaultPoints[i] = { widgetFrame:GetPoint(i) }
+        end
+    end
+
+    movingWidgets = true
+    widgetFrame:ClearAllPoints()
+    if WayfinderSettings.moveTopWidgets and addon.CompassBannerFrame:IsShown() then
+        widgetFrame:SetPoint("TOP", addon.CompassBannerFrame, "BOTTOM", 0,
+            -(WayfinderSettings.topWidgetsGap or DEFAULT_WIDGET_GAP))
+    else
+        for _, point in ipairs(widgetDefaultPoints) do
+            widgetFrame:SetPoint(unpack(point))
+        end
+    end
+    movingWidgets = false
+end
+
+if widgetFrame then
+    -- Keep it there if the game re-anchors it.
+    hooksecurefunc(widgetFrame, "SetPoint", function()
+        if movingWidgets or not WayfinderSettings.moveTopWidgets then return end
+        placeTopWidgets()
+    end)
+
+    local combatFrame = CreateFrame("Frame")
+    combatFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    combatFrame:SetScript("OnEvent", function()
+        if widgetsPending then placeTopWidgets() end
+    end)
+end
+
+api.TopWidgets = {
+    IsAvailable = function() return widgetFrame ~= nil end,
+    GetMoved = function() return WayfinderSettings.moveTopWidgets == true end,
+    SetMoved = function(moved)
+        WayfinderSettings.moveTopWidgets = moved or nil
+        placeTopWidgets()
+    end,
+    GetGap = function() return WayfinderSettings.topWidgetsGap or DEFAULT_WIDGET_GAP end,
+    SetGap = function(gap)
+        WayfinderSettings.topWidgetsGap = gap ~= DEFAULT_WIDGET_GAP and gap or nil
+        placeTopWidgets()
+    end,
+}
+
 -- _p.refreshSettingsPanel is a no-op until Settings.lua has loaded, so it's safe to call
 -- unconditionally here. It's how the options panel's "Show compass banner" checkbox stays in sync when the banner is shown
 -- or hidden through some other path - a slash command, the minimap button, or Events.lua
@@ -291,6 +358,7 @@ end
 local function enableCompassBanner()
     addon.CompassBannerFrame:Show()
     addon.CompassBannerFrame:SetScript("OnUpdate", onUpdate)
+    placeTopWidgets()
     _p.refreshSettingsPanel()
 end
 _p.enableCompassBanner = enableCompassBanner
@@ -298,6 +366,7 @@ _p.enableCompassBanner = enableCompassBanner
 local function disableCompassBanner()
     addon.CompassBannerFrame:Hide()
     addon.CompassBannerFrame:SetScript("OnUpdate", nil)
+    placeTopWidgets()
     _p.refreshSettingsPanel()
 end
 _p.disableCompassBanner = disableCompassBanner

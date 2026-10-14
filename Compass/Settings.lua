@@ -38,6 +38,19 @@ general:Checkbox("Lock Position",
     "Lock the banner in place, or unlock it to drag to a new position.",
     { indent = true, enabled = api.CompassBanner.IsShown })
 
+if api.TopWidgets.IsAvailable() then
+    general:Checkbox("Move Top Widgets Below Compass",
+        api.TopWidgets.GetMoved, api.TopWidgets.SetMoved,
+        "Move the game's top-center widgets (zone objectives, capture bars and event timers) to just below the compass so they don't overlap it. They follow the compass if you drag it, and go back to their usual spot while the compass is hidden.",
+        { indent = true, enabled = api.CompassBanner.IsShown })
+
+    general:Slider("Spacing Below Compass", 0, 100, 1,
+        api.TopWidgets.GetGap, api.TopWidgets.SetGap,
+        function(pixels) return pixels .. " px" end,
+        "How far below the compass the top-center widgets sit. The default, 32 px, clears the super-tracking distance and ETA.",
+        { indent = 2, enabled = function() return api.CompassBanner.IsShown() and api.TopWidgets.GetMoved() end })
+end
+
 general:Dropdown("Compass Detail", {
     { value = DetailLevel.None, label = "None", tooltip = "Hide compass detail entirely." },
     { value = DetailLevel.Cardinals, label = "Cardinals", tooltip = "Cardinal directions only (N, E, S, W)." },
